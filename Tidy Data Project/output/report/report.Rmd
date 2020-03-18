@@ -1,0 +1,75 @@
+---
+title: "Can Internet Regulation Prevent Fake News?"
+author: "Dr Andrea De Angelis"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document
+---
+
+```{r setup, include=FALSE}
+
+# This sets as default the inclusion of the R code from the report:
+knitr::opts_chunk$set(echo = FALSE)
+
+# Source setup scripts:
+source(here::here("src","00_setup.R"))
+
+# Eventually attach packages here:
+library(stargazer)
+library(tidyverse)
+library(here)
+
+# Load data:
+load(here::here("output","DSP_recoded.Rdata"))
+```
+
+## Abstract
+This is an example of an RMarkdown automated report.
+
+# Descriptives
+This report uses DSP data to investigate whether Internet regulation can prevent fake news. 
+The DSP data contains `r nrow(DSP_rec)` observations from year 1980 until 2019.  
+
+The `v2smregcon` variable measures the level of legal framework protection that the country adopted to regulate the Internet. This is the distribution of this variable:
+
+```{r echo=FALSE}
+ggplot(DSP_rec) + 
+     geom_histogram(mapping = aes(x = v2smregcon)) + 
+     labs(x = "", title = "Histogram of v2smregcon") + 
+     theme_bw()
+```
+
+We hypothesize that better regulatory frameworks of the Internet can prevent the diffusion of fake news operated by government with the goal of propaganda. Variable `v2smgovdom` measures how often the government uses social media to disseminate false of misleading news to influence public opinion. 
+We count `r sum(!is.na(DSP_rec$v2smgovdom))` non-missing values.   
+The following histogram shows the distribution of the variable:
+
+```{r echo=FALSE}
+ggplot(DSP_rec) + 
+     geom_histogram(mapping = aes(x = v2smgovdom)) + 
+     labs(x = "", title = "Histogram of v2smgovdom") + 
+     theme_bw()
+```
+
+# Regression analysis
+
+We thus estimate a linear regression model to test our hypothesis that greater regulatory framework reduces the amount of fake news. These are the results:
+
+```{r echo=FALSE, results='asis'}
+# resuls='asis' explained here: https://stackoverflow.com/questions/14670299/using-stargazer-with-rstudio-and-knitr
+
+# Model 1: baseline specification
+fm_govdom1 <- lm(v2smgovdom ~ v2smregcon, data = DSP_rec)
+
+# Model 2: adding country fixed-effects:
+fm_govdom2 <- lm(v2smgovdom ~ v2smregcon + country_name, data = DSP_rec)
+
+# Model 3: adding year fixed-effects
+fm_govdom3 <- lm(v2smgovdom ~ v2smregcon + country_name + year, data = DSP_rec)
+
+stargazer(fm_govdom1, fm_govdom2, fm_govdom3, 
+          type = "html", style = "apsr",
+          omit = c("country_name", "year"), 
+          add.lines = list(c("Country FE", "No", "Yes", "Yes"), 
+                           c("Year FE", "No", "No", "Yes")))
+```
+
